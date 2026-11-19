@@ -318,6 +318,17 @@ namespace Boll.App
         void Toast(string s, float t) { toast.text = s; toast.gameObject.SetActive(true); toastT = t; }
 
         // ================= кадр =================
+        /// <summary>60 — удар и ход бота; 30 — только едут препятствия; 20 — полный покой.</summary>
+        public override int Fps
+        {
+            get
+            {
+                if (paused || finished) return 20;
+                if (M.Phase == Phase.Shooting || !PlayerTurn) return 60;
+                return M.Rest.HasMovers ? 30 : 20;
+            }
+        }
+
         public override void Tick()
         {
             float dt = Mathf.Min(Time.unscaledDeltaTime, 0.1f);

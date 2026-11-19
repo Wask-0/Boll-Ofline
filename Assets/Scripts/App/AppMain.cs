@@ -20,6 +20,8 @@ namespace Boll.App
         public abstract void Build();
         public virtual void Back() => A.Pop();
         public virtual void Tick() { }
+        /// <summary>Нужная частота кадров, пока нет касаний (экономия заряда).</summary>
+        public virtual int Fps => 30;
         public virtual void OnSystemPause() { }
         public virtual void Closed() { }
     }
@@ -49,6 +51,7 @@ namespace Boll.App
         void Awake()
         {
             I = this;
+            QualitySettings.vSyncCount = 0;
             Application.targetFrameRate = 60;
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
             Screen.autorotateToPortrait = Screen.autorotateToPortraitUpsideDown = false;
@@ -194,8 +197,25 @@ namespace Boll.App
         {
             if (current == null) return;
             if (dialogs.Count == 0) current.Tick();
+            UpdateFps();
             Keyboard kb = Keyboard.current;
             if (kb != null && kb.escapeKey.wasPressedThisFrame) OnBack();
+        }
+
+        // ---------- частота кадров ----------
+        float wakeUntil; int appliedFps = -1;
+
+        /// <summary>Касание или клавиша «будит» 60 FPS на полсекунды — отклик на ввод не страдает.</summary>
+        void UpdateFps()
+        {
+            bool touch = false;
+            Touchscreen ts = Touchscreen.current;
+            if (ts != null && ts.primaryTouch.press.isPressed) touch = true;
+            Mouse ms = Mouse.current;
+            if (ms != null && (ms.leftButton.isPressed || ms.leftButton.wasReleasedThisFrame)) touch = true;
+            if (touch) wakeUntil = Time.unscaledTime + 0.5f;
+            int want = Time.unscaledTime < wakeUntil || dialogs.Count > 0 ? 60 : Mathf.Clamp(current.Fps, 15, 60);
+            if (want != appliedFps) { appliedFps = want; Application.targetFrameRate = want; }
         }
 
         void OnBack()

@@ -101,7 +101,7 @@ namespace Boll.App
             left.GetComponent<VerticalLayoutGroup>().childAlignment = TextAnchor.MiddleLeft;
             Ui.Title(left, "BOLL", 150, Ui.Gold, TextAnchor.MiddleLeft);
             Ui.Label(left, "OFFLINE БИЛЬЯРД", 36, TextAnchor.MiddleLeft, Ui.Txt).fontStyle = FontStyle.Bold;
-            Ui.Label(left, "Пять видов, 35 столов, 8 соперников.\nИграйте без интернета.", 26, TextAnchor.UpperLeft, Ui.Dim);
+            Ui.Label(left, "Играйте без интернета.", 26, TextAnchor.UpperLeft, Ui.Dim);
 
             // звёзды
             var pill = Ui.Round(R, Ui.CardC, 30, "Stars");
