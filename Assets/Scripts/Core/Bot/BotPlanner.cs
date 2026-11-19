@@ -289,22 +289,26 @@ namespace Boll.Core.Bot
 
         // ================= кандидаты =================
         /// <summary>Биток: шар 0; в «Американке», если он уже забит, — шар с лучшим геометрическим ударом.</summary>
-        int? cueIdCache;
+        int? cueIdCache; Ball rootCue;
         /// <summary>Биток, которым бот бьёт в этом ходу (для отрисовки кия).</summary>
         public int CueBallId => cueIdCache ?? (cueIdCache = CueOf(m)?.Id ?? 0).Value;
 
         Ball CueOf(Match n)
         {
             Ball z = n.BallById(0);
-            if (n.Kind != GameKind.American || (z != null && !z.Pocketed)) return z;
+            if (n.Kind != GameKind.American) return z;
+            bool root = ReferenceEquals(n, m);
+            if (!root && z != null && !z.Pocketed) return z;     // в глубине поиска — быстрый вариант
+            if (root && rootCue != null && !rootCue.Pocketed) return rootCue;
             Ball best = null; double bq = -1;
             foreach (Ball b in n.Solver.Balls)
             {
                 if (b.Pocketed) continue;
                 var tg = n.Solver.Balls.Where(o => !o.Pocketed && o.Id != b.Id).Select(o => o.Id).ToList();
-                double q = Geometric(n, b.Pos, tg, b.Id).Select(c => c.Quality).DefaultIfEmpty(0).Max();
+                double q = Geometric(n, b.Pos, tg, b.Id).Select(c => c.Quality * (0.15 + c.Prob)).DefaultIfEmpty(0).Max();
                 if (q > bq || best == null) { bq = q; best = b; }
             }
+            if (root) rootCue = best;
             return best;
         }
 
