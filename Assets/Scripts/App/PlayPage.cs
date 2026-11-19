@@ -48,6 +48,7 @@ namespace Boll.App
         }
 
         bool sliderMode => PMode == 2 || (PMode == 1 && scaleTouched);   // сила задаётся шкалой, а не оттяжкой
+        int evRead;
         int PMode => AppMain.I.D.Settings.PowerInput;
 
         bool PlayerTurn => M.St.Current == 0;
@@ -107,10 +108,10 @@ namespace Boll.App
             fill.anchorMin = Vector2.zero; fill.anchorMax = new Vector2(1, 0); fill.offsetMin = fill.offsetMax = Vector2.zero;
             powerHandle = Ui.Rect(track, "Handle");
             var himg = powerHandle.gameObject.AddComponent<Image>(); himg.sprite = Sprites.Circle; himg.raycastTarget = false;
-            powerHandle.anchorMin = powerHandle.anchorMax = new Vector2(0.5f, 0); powerHandle.sizeDelta = new Vector2(58, 58);
+            powerHandle.anchorMin = powerHandle.anchorMax = new Vector2(0.5f, 0); powerHandle.sizeDelta = new Vector2(38, 38);
             powerHandle.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(0, -3);
             var dot = Ui.Rect(powerHandle, "Dot"); var dimg = dot.gameObject.AddComponent<Image>(); dimg.sprite = Sprites.Circle; dimg.color = Ui.Gold; dimg.raycastTarget = false;
-            dot.anchorMin = dot.anchorMax = new Vector2(0.5f, 0.5f); dot.sizeDelta = new Vector2(24, 24);
+            dot.anchorMin = dot.anchorMax = new Vector2(0.5f, 0.5f); dot.sizeDelta = new Vector2(14, 14);
             powerText = Ui.Title(R, "Сила 0 %", 24);
             Anchor(powerText.rectTransform, new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-70, -96), new Vector2(200, 32));
             var pc = bar.gameObject.AddComponent<Catcher>();
@@ -201,7 +202,7 @@ namespace Boll.App
 
         void Launched()
         {
-            shooting = true; power = 0; drag = Drag.None; tv.ShowHome(false);
+            shooting = true; evRead = 0; power = 0; drag = Drag.None; tv.ShowHome(false);
             if (A.D.Active != null) { A.D.Active.Snapshot = M.PreShot; A.SaveNow(); }
         }
 
@@ -342,8 +343,12 @@ namespace Boll.App
             for (int i = 0; i < n; i++)
             {
                 M.Step();
-                foreach (SolverEvent e in M.Solver.Events)
+                // Events копятся весь удар (их читает судья по индексу) — озвучиваем только новые
+                var evs = M.Solver.Events;
+                if (evRead > evs.Count) evRead = 0;
+                for (; evRead < evs.Count; evRead++)
                 {
+                    SolverEvent e = evs[evRead];
                     if (e.Type == Boll.Core.Physics.EventType.BallBall) Sfx.Hit(e.Speed);
                     else if (e.Type == Boll.Core.Physics.EventType.Cushion)
                     {
