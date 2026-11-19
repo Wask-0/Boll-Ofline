@@ -109,7 +109,11 @@ namespace Boll.App
             if (DataCorrupt) D = new SaveData();
             Prof = new Profile(D, Cat);
             if (Cat.Model(D.Settings.Physics) == null) D.Settings.Physics = Cat.DefaultModel;
+            Sfx.Create(transform);
+            ApplyAudio();
         }
+
+        public void ApplyAudio() => Sfx.I?.Apply(D.Settings.Master, D.Settings.Music, D.Settings.Effects);
 
         public void SaveNow() { if (!DataCorrupt) { try { Store.Save(D); } catch (Exception e) { Log.Exception(e.Message, e.StackTrace); } } }
 

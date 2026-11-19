@@ -58,7 +58,7 @@ namespace Boll.App
             var b = r.gameObject.AddComponent<Button>();
             b.targetGraphic = r.GetComponent<Image>();
             var cb = b.colors; cb.pressedColor = new Color(0.7f, 0.7f, 0.7f); cb.disabledColor = new Color(0.5f, 0.5f, 0.5f, 0.6f); b.colors = cb;
-            if (on != null) b.onClick.AddListener(() => on());
+            b.onClick.AddListener(() => { Sfx.Click(); on?.Invoke(); });
             Fill(Label(r, s, size).rectTransform);
             var le = r.gameObject.AddComponent<LayoutElement>(); le.preferredHeight = h; le.minHeight = h;
             return b;

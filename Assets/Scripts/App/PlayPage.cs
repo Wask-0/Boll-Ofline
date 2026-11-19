@@ -183,6 +183,7 @@ namespace Boll.App
 
         void Launched()
         {
+            Sfx.CueHit(M.LastShot != null ? M.LastShot.Power : power);
             shooting = true; power = 0; drag = Drag.None; tv.ShowHome(false);
             if (A.D.Active != null) { A.D.Active.Snapshot = M.PreShot; A.SaveNow(); }
         }
@@ -323,6 +324,12 @@ namespace Boll.App
             for (int i = 0; i < n; i++)
             {
                 M.Step();
+                foreach (SolverEvent e in M.Solver.Events)
+                {
+                    if (e.Type == Boll.Core.Physics.EventType.BallBall) Sfx.Hit(e.Speed);
+                    else if (e.Type == Boll.Core.Physics.EventType.Cushion) Sfx.Rail(e.Speed);
+                    else if (e.Type == Boll.Core.Physics.EventType.Pocket) Sfx.Pocket();
+                }
                 if (shooting && M.Phase != Phase.Shooting) { OnShotEnd(); break; }
             }
         }

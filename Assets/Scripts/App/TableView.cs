@@ -58,8 +58,9 @@ namespace Boll.App
         readonly Match m; readonly GameObject root; readonly double R; readonly RectTransform numberLayer;
         readonly Dictionary<int, (Transform t, Text num)> balls = new Dictionary<int, (Transform, Text)>();
         readonly List<(int idx, Transform t, Obstacle o)> movers = new List<(int, Transform, Obstacle)>();
+        readonly Dictionary<int, Transform> shadows = new Dictionary<int, Transform>();
         readonly List<Transform> pocketRings = new List<Transform>(); readonly List<Transform> homeSegs = new List<Transform>();
-        readonly Transform cueT, aim1, aim2, aim3, ghost, selRing, calledRing;
+        readonly Transform cueT, cueButt, aim1, aim2, aim3, ghost, selRing, calledRing;
         readonly SpriteRenderer cueSr;
         double minX, maxX, minY, maxY;
         float scale = 100, camX, camY; int sw, sh; Rect region;
@@ -92,6 +93,9 @@ namespace Boll.App
                 }
             foreach (Ball b in m.Solver.Balls)
             {
+                Transform sh = NewSprite("shadow" + b.Id, Sprites.Circle, new Color(0, 0, 0, 0.3f), 4);
+                sh.localScale = Vector3.one * (float)(R * 2.1);
+                shadows[b.Id] = sh;
                 Transform t = NewSprite("ball" + b.Id, BallSprite(b.Id, out bool numbered), Color.white, 5);
                 t.localScale = Vector3.one * (float)(R * 2);
                 Text num = null;
@@ -103,6 +107,7 @@ namespace Boll.App
                 balls[b.Id] = (t, num);
             }
             cueT = NewSprite("cue", Sprites.White, cue, 7); cueSr = cueT.GetComponent<SpriteRenderer>(); cueT.gameObject.SetActive(false);
+            cueButt = NewSprite("cueButt", Sprites.White, cue * 0.55f + new Color(0, 0, 0, 0.45f), 7); cueButt.gameObject.SetActive(false);
             aim1 = NewSprite("aim1", Sprites.White, new Color(1, 1, 1, 0.55f), 3); aim2 = NewSprite("aim2", Sprites.White, new Color(1, 1, 0.6f, 0.45f), 3); aim3 = NewSprite("aim3", Sprites.White, new Color(1, 1, 1, 0.35f), 3);
             ghost = NewSprite("ghost", Sprites.Ring, new Color(1, 1, 1, 0.7f), 3); ghost.localScale = Vector3.one * (float)(R * 2);
             selRing = NewSprite("sel", Sprites.Ring, new Color(0.95f, 0.8f, 0.3f), 6); selRing.localScale = Vector3.one * (float)(R * 2.8); selRing.gameObject.SetActive(false);
@@ -214,6 +219,8 @@ namespace Boll.App
                 var (t, num) = balls[b.Id];
                 bool vis = !b.Pocketed;
                 t.gameObject.SetActive(vis);
+                shadows[b.Id].gameObject.SetActive(vis);
+                shadows[b.Id].position = V(b.Pos + new Vec2(R * 0.18, -R * 0.22));
                 if (num != null) num.gameObject.SetActive(vis);
                 if (!vis) continue;
                 t.position = V(b.Pos);
@@ -245,12 +252,13 @@ namespace Boll.App
 
         public void ShowCue(bool on, Vec2 ball, double angle, double pull)
         {
-            cueT.gameObject.SetActive(on);
+            cueT.gameObject.SetActive(on); cueButt.gameObject.SetActive(on);
             if (!on) return;
             Vec2 dir = new Vec2(Math.Cos(angle), Math.Sin(angle));
             double gap = R + 0.01 + pull;
-            Vec2 tip = ball - dir * gap, butt = ball - dir * (gap + 1.45);
-            Seg(cueT, tip, butt, 0.016f);
+            Vec2 tip = ball - dir * gap, mid = ball - dir * (gap + 0.9), butt = ball - dir * (gap + 1.45);
+            Seg(cueT, tip, mid, 0.011f);          // шафт тоньше, рукоять толще и темнее
+            Seg(cueButt, mid, butt, 0.021f);
         }
 
         public void HideAim() { aim1.gameObject.SetActive(false); aim2.gameObject.SetActive(false); aim3.gameObject.SetActive(false); ghost.gameObject.SetActive(false); }

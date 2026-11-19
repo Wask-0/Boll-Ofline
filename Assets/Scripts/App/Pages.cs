@@ -178,9 +178,9 @@ namespace Boll.App
             }
 
             Ui.Label(list, "Громкость", 28, TextAnchor.MiddleCenter, Ui.Gold);
-            Slide(list, "Общая", s.Master, v => { s.Master = v; AudioListener.volume = v / 100f; });
-            Slide(list, "Музыка", s.Music, v => s.Music = v);
-            Slide(list, "Эффекты", s.Effects, v => s.Effects = v);
+            Slide(list, "Общая", s.Master, v => { s.Master = v; A.ApplyAudio(); });
+            Slide(list, "Музыка", s.Music, v => { s.Music = v; A.ApplyAudio(); });
+            Slide(list, "Эффекты", s.Effects, v => { s.Effects = v; A.ApplyAudio(); });
             Ui.Btn(list, "Поделиться журналом ошибок", A.ShareLog, 68, 24, Ui.Dark);
         }
 
