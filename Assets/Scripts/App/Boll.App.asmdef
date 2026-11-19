@@ -1,6 +1,8 @@
 {
   "name": "Boll.App",
   "rootNamespace": "Boll.App",
-  "references": ["Boll.Core"],
+  "references": ["Boll.Core", "Unity.InputSystem", "Unity.ugui"],
+  "overrideReferences": true,
+  "precompiledReferences": ["Newtonsoft.Json.dll"],
   "autoReferenced": true
 }

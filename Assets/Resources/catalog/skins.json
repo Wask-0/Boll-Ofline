@@ -5,8 +5,8 @@
   {"id":"cloth_burgundy","name":"Бордовое","price":10,"color":"#6B1F2E","image":"skins/cloth_burgundy"}
  ],
  "cues":[
-  {"id":"cue_classic","name":"Классический","price":0,"image":"skins/cue_classic"},
-  {"id":"cue_dark","name":"Тёмный","price":10,"image":"skins/cue_dark"},
-  {"id":"cue_light","name":"Светлый","price":10,"image":"skins/cue_light"}
+  {"id":"cue_classic","name":"Классический","price":0,"color":"#D9B36C","image":"skins/cue_classic"},
+  {"id":"cue_dark","name":"Тёмный","price":10,"color":"#3A2A20","image":"skins/cue_dark"},
+  {"id":"cue_light","name":"Светлый","price":10,"color":"#F2E6C9","image":"skins/cue_light"}
  ]
 }
