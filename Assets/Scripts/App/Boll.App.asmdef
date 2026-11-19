@@ -1,0 +1,6 @@
+{
+  "name": "Boll.App",
+  "rootNamespace": "Boll.App",
+  "references": ["Boll.Core"],
+  "autoReferenced": true
+}

@@ -1,0 +1,10 @@
+{"levels":[
+ {"level":1,"name":"Новичок","angleSpreadDeg":8,"spin":"none","lookahead":0,"fallback":"none","clusters":false},
+ {"level":2,"name":"Любитель","angleSpreadDeg":5,"spin":"none","lookahead":0,"fallback":"none","clusters":false},
+ {"level":3,"name":"Ученик","angleSpreadDeg":3.5,"spin":"topback","lookahead":0,"fallback":"none","clusters":false},
+ {"level":4,"name":"Игрок клуба","angleSpreadDeg":2.5,"spin":"topback","lookahead":1,"fallback":"none","clusters":false},
+ {"level":5,"name":"Опытный","angleSpreadDeg":1.5,"spin":"full","lookahead":1,"fallback":"ifNoShot","clusters":false},
+ {"level":6,"name":"Мастер","angleSpreadDeg":1,"spin":"full","lookahead":2,"fallback":"tactical","clusters":false},
+ {"level":7,"name":"Мастер спорта","angleSpreadDeg":0.5,"spin":"full","lookahead":3,"fallback":"tactical","clusters":true},
+ {"level":8,"name":"Профессионал","angleSpreadDeg":0.15,"spin":"full","lookahead":8,"fallback":"tactical","clusters":true}
+]}

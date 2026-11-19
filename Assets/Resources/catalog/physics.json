@@ -1,0 +1,8 @@
+{
+  "default": "medium",
+  "models": [
+    {"id":"arcade","name":"Аркадная","slidingFriction":0.15,"rollingFriction":0.008,"spinDecay":6.0,"spinInfluence":0.5,"cushionRestitution":0.80,"ballRestitution":0.95,"pocketCapture":1.15,"cueSpeed":6.0},
+    {"id":"medium","name":"Средняя","slidingFriction":0.175,"rollingFriction":0.009,"spinDecay":5.5,"spinInfluence":0.75,"cushionRestitution":0.775,"ballRestitution":0.95,"pocketCapture":1.075,"cueSpeed":6.0},
+    {"id":"realistic","name":"Реалистичная","slidingFriction":0.20,"rollingFriction":0.010,"spinDecay":5.0,"spinInfluence":1.0,"cushionRestitution":0.75,"ballRestitution":0.95,"pocketCapture":1.00,"cueSpeed":6.0}
+  ]
+}

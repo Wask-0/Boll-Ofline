@@ -1,0 +1,12 @@
+{
+ "cloths":[
+  {"id":"cloth_green","name":"Зелёное","price":0,"color":"#1F6B3A","image":"skins/cloth_green"},
+  {"id":"cloth_blue","name":"Синее","price":10,"color":"#1F4E7A","image":"skins/cloth_blue"},
+  {"id":"cloth_burgundy","name":"Бордовое","price":10,"color":"#6B1F2E","image":"skins/cloth_burgundy"}
+ ],
+ "cues":[
+  {"id":"cue_classic","name":"Классический","price":0,"image":"skins/cue_classic"},
+  {"id":"cue_dark","name":"Тёмный","price":10,"image":"skins/cue_dark"},
+  {"id":"cue_light","name":"Светлый","price":10,"image":"skins/cue_light"}
+ ]
+}
