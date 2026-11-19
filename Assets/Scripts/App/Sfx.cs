@@ -7,7 +7,8 @@ namespace Boll.App
     {
         public static Sfx I;
         const int Rate = 44100;
-        AudioClip hit, rail, pocket, cue, click, music;
+        AudioClip hit, rail, bumper, click, music;
+        float lastHit, lastRail, lastBumper;
         AudioSource[] pool; int next; AudioSource musicSrc;
         System.Random rnd = new System.Random(7);
         float effects = 1, musicVol = 0.7f;
@@ -20,10 +21,10 @@ namespace Boll.App
 
         void Init()
         {
-            hit = Clip("hit", 0.14f, (t, n) => Mathf.Sin(2 * Mathf.PI * 2600 * t) * Mathf.Exp(-t * 55) * 0.55f + n * Mathf.Exp(-t * 160) * 0.5f);
-            rail = Clip("rail", 0.18f, (t, n) => Mathf.Sin(2 * Mathf.PI * 170 * t) * Mathf.Exp(-t * 30) * 0.8f + n * Mathf.Exp(-t * 90) * 0.25f);
-            pocket = Clip("pocket", 0.45f, (t, n) => Mathf.Sin(2 * Mathf.PI * (130 - 60 * t) * t) * Mathf.Exp(-t * 12) * 0.7f + n * Mathf.Exp(-t * 18) * 0.2f * Mathf.Abs(Mathf.Sin(t * 70)));
-            cue = Clip("cue", 0.1f, (t, n) => n * Mathf.Exp(-t * 80) * 0.7f + Mathf.Sin(2 * Mathf.PI * 900 * t) * Mathf.Exp(-t * 70) * 0.4f);
+            // только чистые короткие «тоны», без шума: шар о шар, шар о борт, шар о бампер
+            hit = Clip("hit", 0.16f, (t, n) => (Mathf.Sin(2 * Mathf.PI * 1900 * t) * 0.5f + Mathf.Sin(2 * Mathf.PI * 3300 * t) * 0.25f) * Mathf.Exp(-t * 48) * Mathf.Min(1, t * 900));
+            rail = Clip("rail", 0.2f, (t, n) => (Mathf.Sin(2 * Mathf.PI * 150 * t) * 0.7f + Mathf.Sin(2 * Mathf.PI * 310 * t) * 0.25f) * Mathf.Exp(-t * 26) * Mathf.Min(1, t * 700));
+            bumper = Clip("bumper", 0.22f, (t, n) => Mathf.Sin(2 * Mathf.PI * (520 - 140 * t) * t) * Mathf.Exp(-t * 20) * 0.75f * Mathf.Min(1, t * 700));
             click = Clip("click", 0.06f, (t, n) => Mathf.Sin(2 * Mathf.PI * 1300 * t) * Mathf.Exp(-t * 70) * 0.5f);
             music = Music();
             pool = new AudioSource[10];
@@ -72,12 +73,26 @@ namespace Boll.App
             s.pitch = pitch; s.PlayOneShot(c, Mathf.Clamp01(vol) * effects);
         }
 
-        static float Vol(double speed) => Mathf.Clamp01(0.2f + (float)speed * 0.35f);
+        const float MinSpeed = 0.12f;      // тише — это качение вдоль борта или касание покоящихся шаров, звука нет
+        static float Vol(double speed) => Mathf.Clamp01(0.12f + (float)speed * 0.3f);
 
-        public static void Hit(double speed) => I?.Play(I.hit, Vol(speed), 0.92f + (float)I.rnd.NextDouble() * 0.16f);
-        public static void Rail(double speed) => I?.Play(I.rail, Vol(speed), 0.95f + (float)I.rnd.NextDouble() * 0.1f);
-        public static void Pocket() => I?.Play(I.pocket, 0.8f, 1f);
-        public static void CueHit(double power) => I?.Play(I.cue, 0.3f + (float)power * 0.7f, 0.95f + (float)power * 0.1f);
+        public static void Hit(double speed)
+        {
+            if (I == null || speed < MinSpeed || Time.unscaledTime - I.lastHit < 0.04f) return;
+            I.lastHit = Time.unscaledTime; I.Play(I.hit, Vol(speed), 0.94f + (float)I.rnd.NextDouble() * 0.12f);
+        }
+
+        public static void Rail(double speed)
+        {
+            if (I == null || speed < MinSpeed || Time.unscaledTime - I.lastRail < 0.05f) return;
+            I.lastRail = Time.unscaledTime; I.Play(I.rail, Vol(speed), 0.96f + (float)I.rnd.NextDouble() * 0.08f);
+        }
+
+        public static void Bumper(double speed)
+        {
+            if (I == null || speed < MinSpeed || Time.unscaledTime - I.lastBumper < 0.05f) return;
+            I.lastBumper = Time.unscaledTime; I.Play(I.bumper, Vol(speed), 1f);
+        }
         public static void Click() => I?.Play(I.click, 0.6f, 1f);
     }
 }

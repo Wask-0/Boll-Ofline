@@ -47,6 +47,8 @@ namespace Boll.App
             BeginTurn(true);
         }
 
+        int PMode => AppMain.I.D.Settings.PowerInput;
+
         bool PlayerTurn => M.St.Current == 0;
 
         // ================= построение =================
@@ -97,18 +99,18 @@ namespace Boll.App
 
             // шкала силы
             var bar = Ui.Box(R, Ui.Dark, "Power");
-            Anchor(bar, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-24, -130), new Vector2(76, 290));
+            Ui.Place(bar, 1, 0, 1, 1, -100, 345, 24, 130);   // тянется между верхней панелью и окном точки удара
             powerFill = Ui.Box(bar, Ui.Gold, "Fill").GetComponent<Image>();
             powerText = Ui.Label(R, "Сила 0 %", 22);
             Anchor(powerText.rectTransform, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-10, -98), new Vector2(200, 30));
             var pc = bar.gameObject.AddComponent<Catcher>();
-            pc.Down = pc.Drag = p => { if (!CanInput) return; sliderMode = true; power = LocalNorm(bar, p).y; power = Math.Max(0, Math.Min(1, power)); };
+            pc.Down = pc.Drag = p => { if (!CanInput || PMode == 0) return; sliderMode = true; power = LocalNorm(bar, p).y; power = Math.Max(0, Math.Min(1, power)); };
 
             // окно точки удара
             var spin = Ui.Box(R, new Color(0.95f, 0.93f, 0.85f), "Spin"); spin.GetComponent<Image>().sprite = Sprites.Circle;
-            Anchor(spin, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-48, 150), new Vector2(170, 170));
-            var h = Ui.Box(spin, new Color(0.7f, 0.7f, 0.65f), "H"); Anchor(h, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(170, 2));
-            var v = Ui.Box(spin, new Color(0.7f, 0.7f, 0.65f), "V"); Anchor(v, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(2, 170));
+            Anchor(spin, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-52, 140), new Vector2(160, 160));
+            var h = Ui.Box(spin, new Color(0.7f, 0.7f, 0.65f), "H"); Anchor(h, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(160, 2));
+            var v = Ui.Box(spin, new Color(0.7f, 0.7f, 0.65f), "V"); Anchor(v, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(2, 160));
             spinDot = Ui.Box(spin, Ui.Red, "Dot"); spinDot.GetComponent<Image>().sprite = Sprites.Circle;
             Anchor(spinDot, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(30, 30));
             var sc = spin.gameObject.AddComponent<Catcher>();
@@ -120,7 +122,7 @@ namespace Boll.App
                 spinX = n.x; spinY = n.y;
             };
             var spinLbl = Ui.Label(R, "Точка удара", 20, TextAnchor.MiddleCenter, Ui.Dim);
-            Anchor(spinLbl.rectTransform, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-48, 324), new Vector2(170, 28));
+            Anchor(spinLbl.rectTransform, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-52, 304), new Vector2(160, 28));
 
             shootBtn = Ui.Btn(R, "Удар", OnShootButton, 90, 34, Ui.Red); Destroy(shootBtn.GetComponent<LayoutElement>());
             Anchor((RectTransform)shootBtn.transform, new Vector2(1, 0), new Vector2(1, 0), new Vector2(-24, 24), new Vector2(230, 100));
@@ -156,7 +158,7 @@ namespace Boll.App
         // ================= ход партии =================
         void BeginTurn(bool first = false)
         {
-            power = 0; sliderMode = false; called = -1; nominated = -1; freeBall = -1; freeSelect = false; drag = Drag.None;
+            power = 0; sliderMode = PMode == 2; called = -1; nominated = -1; freeBall = -1; freeSelect = false; drag = Drag.None;
             placed = M.St.Hand == HandMode.None; planner = null; botT = 0;
             cueId = M.CueCandidates().Contains(cueId) && M.BallById(cueId) != null && !M.BallById(cueId).Pocketed ? cueId : M.CueCandidates()[0];
             if (M.Kind != GameKind.American) cueId = 0;
@@ -183,7 +185,6 @@ namespace Boll.App
 
         void Launched()
         {
-            Sfx.CueHit(M.LastShot != null ? M.LastShot.Power : power);
             shooting = true; power = 0; drag = Drag.None; tv.ShowHome(false);
             if (A.D.Active != null) { A.D.Active.Snapshot = M.PreShot; A.SaveNow(); }
         }
@@ -211,7 +212,8 @@ namespace Boll.App
         {
             if (!CanInput) return;
             if (!placed) { placed = true; tv.ShowHome(false); return; }
-            if (!sliderMode && power <= 0) { Toast("Задайте силу: оттяните палец или двиньте шкалу", 2); return; }
+            if (placed && PMode == 0) return;
+            if (!sliderMode && power <= 0) { Toast(PMode == 2 ? "Задайте силу шкалой" : "Задайте силу: оттяните палец или двиньте шкалу", 2); return; }
             Fire();
         }
 
@@ -327,8 +329,10 @@ namespace Boll.App
                 foreach (SolverEvent e in M.Solver.Events)
                 {
                     if (e.Type == Boll.Core.Physics.EventType.BallBall) Sfx.Hit(e.Speed);
-                    else if (e.Type == Boll.Core.Physics.EventType.Cushion) Sfx.Rail(e.Speed);
-                    else if (e.Type == Boll.Core.Physics.EventType.Pocket) Sfx.Pocket();
+                    else if (e.Type == Boll.Core.Physics.EventType.Cushion)
+                    {
+                        if (e.Surface == Surface.Bumper) Sfx.Bumper(e.Speed); else Sfx.Rail(e.Speed);
+                    }
                 }
                 if (shooting && M.Phase != Phase.Shooting) { OnShotEnd(); break; }
             }
@@ -366,11 +370,13 @@ namespace Boll.App
             powerFill.rectTransform.anchorMin = Vector2.zero; powerFill.rectTransform.anchorMax = new Vector2(1, (float)power);
             powerFill.rectTransform.offsetMin = powerFill.rectTransform.offsetMax = Vector2.zero;
             powerText.text = "Сила " + Mathf.RoundToInt((float)power * 100) + " %";
-            spinDot.anchoredPosition = new Vector2((float)spinX, (float)spinY) * 70f;
+            spinDot.anchoredPosition = new Vector2((float)spinX, (float)spinY) * 65f;
+            shootBtn.gameObject.SetActive(!placed || PMode != 0);
 
             string h = "";
             if (can && !placed) h = "Перетащите биток, затем нажмите «Готово»";
             else if (can && M.NeedsCalledPocket(cueId) && called < 0) h = "Коснитесь лузы для «8»";
+            else if (can && PMode == 2) h = "Прицельтесь пальцем, силу задайте шкалой и нажмите «Удар»";
             else if (can && M.Kind == GameKind.American) h = "Коснитесь шара, которым будете бить";
             else if (can && freeSelect) h = freeBall < 0 ? "Коснитесь шара, который заявляете" : "Заявлен шар " + freeBall;
             hint.text = h;

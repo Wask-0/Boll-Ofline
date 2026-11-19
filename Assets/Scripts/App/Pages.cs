@@ -153,6 +153,7 @@ namespace Boll.App
             {
                 GameKind kk = k;
                 var row = Ui.Row(col, 14, 92);
+                row.GetComponent<HorizontalLayoutGroup>().childForceExpandWidth = false;
                 var main = ListItem(row, Names.Kind(k).Substring(0, 1), Names.Kind(k), Names.KindHint(k), () => A.Go(free ? (Page)new FreeSetupPage(kk) : new BotPage(kk)), true, Ui.CardHi);
                 main.GetComponent<LayoutElement>().flexibleWidth = 1;
                 var r = Ui.Btn(row, "Правила", () => A.Go(new RulesPage(kk)), 92, 24, Ui.CardC);
@@ -256,6 +257,14 @@ namespace Boll.App
                 swBounce.SetEnabled(swAim.On);
                 A.SaveNow();
             });
+
+            // --- сила удара ---
+            var pw = Ui.Card(list);
+            SectionTitle(pw, "Сила удара");
+            string[] pd = { "Сила — оттяжкой пальца от битка; отпустили палец — удар.", "Оттяжкой пальца или шкалой; со шкалой удар — кнопкой «Удар».", "Силу задаёт только шкала; удар — кнопкой «Удар»." };
+            Text pdesc = null; UiSegment pseg = null;
+            pseg = new UiSegment(pw, new[] { "Оттяжка", "Комбинир.", "Шкала" }, Mathf.Clamp(s.PowerInput, 0, 2), i => { s.PowerInput = i; A.SaveNow(); pseg.Select(i); pdesc.text = pd[i]; });
+            pdesc = Ui.Label(pw, pd[Mathf.Clamp(s.PowerInput, 0, 2)], 22, TextAnchor.MiddleLeft, Ui.Dim);
 
             // --- физика ---
             var ph = Ui.Card(list);

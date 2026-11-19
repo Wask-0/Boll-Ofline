@@ -50,6 +50,7 @@ namespace Boll.Core.Save
     public sealed class Settings
     {
         public bool AimLine, BounceLine;
+        public int PowerInput = 1;   // 0 — оттяжка кия, 1 — комбинированная, 2 — только шкала
         public string Physics = "medium";
         public int Master = 100, Music = 70, Effects = 100;
     }
