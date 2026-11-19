@@ -125,4 +125,10 @@ if __name__ == '__main__':
             m = build(kind, n)
             with open(os.path.join(d, f'{kind}_{n}.json'), 'w', encoding='utf-8') as f:
                 json.dump(m, f, ensure_ascii=False, indent=1)
+        if kind != 'snooker':
+            import gen_extra
+            for i in range(len(gen_extra.SHAPES)):
+                m = gen_extra.build_extra(kind, i)
+                with open(os.path.join(d, f'{kind}_{8 + i}.json'), 'w', encoding='utf-8') as f:
+                    json.dump(m, f, ensure_ascii=False, indent=1)
     print('ok')

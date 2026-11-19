@@ -29,8 +29,8 @@ namespace Boll.Tests
         public void SevenMapsPerKindAndAllLoad()
         {
             var cat = new MapCatalog(Sources());
-            Assert.AreEqual(35, cat.Count);
-            foreach (var k in Kinds) Assert.AreEqual(7, cat.Maps(k).Count, k.ToString());
+            Assert.AreEqual(75, cat.Count);
+            foreach (var k in Kinds) Assert.AreEqual(k == GameKind.Snooker ? 7 : 17, cat.Maps(k).Count, k.ToString());
         }
 
         [Test]
