@@ -428,7 +428,8 @@ namespace Boll.App
             }
             else
             {
-                Ball bc = M.Cue; if (bc == null) return;
+                int bid = planner != null ? (planner.Done && planner.Result != null ? planner.Result.CueId : planner.CueBallId) : 0;
+                Ball bc = M.BallById(bid) ?? M.Cue; if (bc == null || bc.Pocketed) return;
                 double target = planner != null && planner.Done && planner.Result != null ? planner.Result.Angle : botAngle + dt * 0.9;
                 double diff = Math.Atan2(Math.Sin(target - botAngle), Math.Cos(target - botAngle));
                 botAngle += diff * Math.Min(1, dt * 6) + (planner != null && planner.Done ? 0 : dt * 0.9);

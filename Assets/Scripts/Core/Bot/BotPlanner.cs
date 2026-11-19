@@ -289,6 +289,10 @@ namespace Boll.Core.Bot
 
         // ================= кандидаты =================
         /// <summary>Биток: шар 0; в «Американке», если он уже забит, — шар с лучшим геометрическим ударом.</summary>
+        int? cueIdCache;
+        /// <summary>Биток, которым бот бьёт в этом ходу (для отрисовки кия).</summary>
+        public int CueBallId => cueIdCache ?? (cueIdCache = CueOf(m)?.Id ?? 0).Value;
+
         Ball CueOf(Match n)
         {
             Ball z = n.BallById(0);
