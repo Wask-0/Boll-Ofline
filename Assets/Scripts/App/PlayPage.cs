@@ -29,7 +29,7 @@ namespace Boll.App
 
         // ввод игрока
         enum Drag { None, Aim, Place }
-        Drag drag; double aimAngle; double power, spinX, spinY; bool sliderMode, placed, freeSelect, freeAvail;
+        Drag drag; double aimAngle; double power, spinX, spinY; bool scaleTouched, placed, freeSelect, freeAvail;
         int cueId, called = -1, nominated = -1, freeBall = -1;
 
         // состояние
@@ -37,7 +37,7 @@ namespace Boll.App
         BotPlanner planner; float botT; double botAngle;
 
         // HUD
-        Text info, score, toast, hint, powerText; Image powerFill; Button shootBtn, freeBtn; RectTransform spinDot, colourBox, pauseRoot;
+        Text info, score, toast, hint, powerText; RectTransform powerFillRt, powerHandle; Button shootBtn, freeBtn; RectTransform spinDot, colourBox, pauseRoot;
         Button[] colourBtns;
 
         public PlayPage(Match m, int level, bool free)
@@ -47,6 +47,7 @@ namespace Boll.App
             BeginTurn(true);
         }
 
+        bool sliderMode => PMode == 2 || (PMode == 1 && scaleTouched);   // сила задаётся шкалой, а не оттяжкой
         int PMode => AppMain.I.D.Settings.PowerInput;
 
         bool PlayerTurn => M.St.Current == 0;
@@ -98,13 +99,28 @@ namespace Boll.App
             Anchor(hint.rectTransform, new Vector2(0.4f, 0), new Vector2(0.5f, 0), new Vector2(0, 24), new Vector2(900, 50));
 
             // шкала силы
-            var bar = Ui.Box(R, Ui.Dark, "Power");
-            Ui.Place(bar, 1, 0, 1, 1, -100, 345, 24, 130);   // тянется между верхней панелью и окном точки удара
-            powerFill = Ui.Box(bar, Ui.Gold, "Fill").GetComponent<Image>();
-            powerText = Ui.Label(R, "Сила 0 %", 22);
-            Anchor(powerText.rectTransform, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-10, -98), new Vector2(200, 30));
+            var bar = Ui.Box(R, new Color(0, 0, 0, 0.001f), "Power");
+            Ui.Place(bar, 1, 0, 1, 1, -115, 345, 25, 130);      // колонка шириной 90, центр на 70 от правого края
+            var track = Ui.Round(bar, new Color(0.03f, 0.09f, 0.07f), 10, "Track");
+            track.anchorMin = new Vector2(0.5f, 0); track.anchorMax = new Vector2(0.5f, 1); track.sizeDelta = new Vector2(22, -60); track.anchoredPosition = Vector2.zero;
+            var fill = Ui.Round(track, Ui.Gold, 10, "Fill"); powerFillRt = fill;
+            fill.anchorMin = Vector2.zero; fill.anchorMax = new Vector2(1, 0); fill.offsetMin = fill.offsetMax = Vector2.zero;
+            powerHandle = Ui.Rect(track, "Handle");
+            var himg = powerHandle.gameObject.AddComponent<Image>(); himg.sprite = Sprites.Circle; himg.raycastTarget = false;
+            powerHandle.anchorMin = powerHandle.anchorMax = new Vector2(0.5f, 0); powerHandle.sizeDelta = new Vector2(58, 58);
+            powerHandle.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(0, -3);
+            var dot = Ui.Rect(powerHandle, "Dot"); var dimg = dot.gameObject.AddComponent<Image>(); dimg.sprite = Sprites.Circle; dimg.color = Ui.Gold; dimg.raycastTarget = false;
+            dot.anchorMin = dot.anchorMax = new Vector2(0.5f, 0.5f); dot.sizeDelta = new Vector2(24, 24);
+            powerText = Ui.Title(R, "Сила 0 %", 24);
+            Anchor(powerText.rectTransform, new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-70, -96), new Vector2(200, 32));
             var pc = bar.gameObject.AddComponent<Catcher>();
-            pc.Down = pc.Drag = p => { if (!CanInput || PMode == 0) return; sliderMode = true; power = LocalNorm(bar, p).y; power = Math.Max(0, Math.Min(1, power)); };
+            pc.Down = pc.Drag = p =>
+            {
+                if (!CanInput || PMode == 0) return;
+                scaleTouched = true;
+                float h = bar.rect.height;
+                power = Math.Max(0, Math.Min(1, (LocalNorm(bar, p).y * h - 30) / Math.Max(1, h - 60)));
+            };
 
             // окно точки удара
             var spin = Ui.Box(R, new Color(0.95f, 0.93f, 0.85f), "Spin"); spin.GetComponent<Image>().sprite = Sprites.Circle;
@@ -158,7 +174,7 @@ namespace Boll.App
         // ================= ход партии =================
         void BeginTurn(bool first = false)
         {
-            power = 0; sliderMode = PMode == 2; called = -1; nominated = -1; freeBall = -1; freeSelect = false; drag = Drag.None;
+            power = 0; scaleTouched = false; called = -1; nominated = -1; freeBall = -1; freeSelect = false; drag = Drag.None;
             placed = M.St.Hand == HandMode.None; planner = null; botT = 0;
             cueId = M.CueCandidates().Contains(cueId) && M.BallById(cueId) != null && !M.BallById(cueId).Pocketed ? cueId : M.CueCandidates()[0];
             if (M.Kind != GameKind.American) cueId = 0;
@@ -213,7 +229,7 @@ namespace Boll.App
             if (!CanInput) return;
             if (!placed) { placed = true; tv.ShowHome(false); return; }
             if (placed && PMode == 0) return;
-            if (!sliderMode && power <= 0) { Toast(PMode == 2 ? "Задайте силу шкалой" : "Задайте силу: оттяните палец или двиньте шкалу", 2); return; }
+            if (power <= 0) { Toast(PMode == 2 ? "Задайте силу шкалой" : "Задайте силу: оттяните палец или двиньте шкалу", 2); return; }
             Fire();
         }
 
@@ -367,8 +383,8 @@ namespace Boll.App
             bool can = CanInput;
             shootBtn.interactable = can;
             Ui.SetText(shootBtn, !placed ? "Готово" : "Удар");
-            powerFill.rectTransform.anchorMin = Vector2.zero; powerFill.rectTransform.anchorMax = new Vector2(1, (float)power);
-            powerFill.rectTransform.offsetMin = powerFill.rectTransform.offsetMax = Vector2.zero;
+            powerFillRt.anchorMax = new Vector2(1, (float)power);
+            powerHandle.anchorMin = powerHandle.anchorMax = new Vector2(0.5f, (float)power); powerHandle.anchoredPosition = Vector2.zero;
             powerText.text = "Сила " + Mathf.RoundToInt((float)power * 100) + " %";
             spinDot.anchoredPosition = new Vector2((float)spinX, (float)spinY) * 65f;
             shootBtn.gameObject.SetActive(!placed || PMode != 0);

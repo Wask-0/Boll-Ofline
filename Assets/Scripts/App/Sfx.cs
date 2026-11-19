@@ -53,9 +53,7 @@ namespace Boll.App
                 float env = Mathf.Min(1, lt / 1.5f) * Mathf.Min(1, (seg - lt) / 1.5f);   // плавные стыки
                 float s = 0;
                 foreach (float f in chords[ci]) s += Mathf.Sin(2 * Mathf.PI * f * 0.5f * t) * 0.5f + Mathf.Sin(2 * Mathf.PI * f * t) * 0.2f;
-                float arp = chords[ci][(int)(lt * 2) % 3] * 2f;
-                s += Mathf.Sin(2 * Mathf.PI * arp * t) * 0.25f * Mathf.Exp(-(lt * 2 % 1) * 4);
-                d[i] = s * env * 0.12f;
+                d[i] = s * env * 0.07f;
             }
             var c = AudioClip.Create("music", n, 1, Rate, false); c.SetData(d, 0); return c;
         }
@@ -63,7 +61,7 @@ namespace Boll.App
         public void Apply(int master, int music, int fx)
         {
             AudioListener.volume = master / 100f; musicVol = music / 100f; effects = fx / 100f;
-            if (musicSrc != null) musicSrc.volume = musicVol * 0.6f;
+            if (musicSrc != null) musicSrc.volume = musicVol * 0.5f;
         }
 
         void Play(AudioClip c, float vol, float pitch)
