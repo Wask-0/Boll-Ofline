@@ -22,30 +22,69 @@ namespace Boll.App
                 default: return "Снукер";
             }
         }
+
+        public static string KindHint(GameKind k)
+        {
+            switch (k)
+            {
+                case GameKind.Eight: return "Пул, правила WPA";
+                case GameKind.Nine: return "Пул, правила WPA";
+                case GameKind.American: return "Русская пирамида";
+                case GameKind.Siberian: return "Московская пирамида";
+                default: return "Правила WPBSA";
+            }
+        }
     }
 
     public abstract class MenuPage : Page
     {
-        /// <summary>Заголовок + кнопка «Назад»; возвращает колонку для содержимого.</summary>
+        /// <summary>Шапка: «Назад» и заголовок. Возвращает колонку для содержимого.</summary>
         protected RectTransform Frame(string title, bool back = true, float width = 0.7f)
         {
-            var head = Ui.Box(R, Ui.PanelC, "Head"); Ui.Place(head, 0, 1, 1, 1, 0, -96, 0, 0);
-            Ui.Label(head, title, 40, TextAnchor.MiddleCenter, Ui.Gold).rectTransform.anchorMax = Vector2.one;
-            Ui.Fill(head.GetComponentInChildren<Text>().rectTransform);
+            var t = Ui.Title(R, title, 44, Ui.Txt);
+            Ui.Place(t.rectTransform, 0, 1, 1, 1, 220, -110, 220, 14);
             if (back)
             {
-                var b = Ui.Btn(head, "Назад", Back, 64, 26, Ui.Dark);
-                Ui.Place((RectTransform)b.transform, 0, 0.5f, 0, 0.5f); var rt = (RectTransform)b.transform;
-                rt.pivot = new Vector2(0, 0.5f); rt.anchoredPosition = new Vector2(24, 0); rt.sizeDelta = new Vector2(160, 64);
-                Destroy(b.GetComponent<LayoutElement>());
+                var b = Ui.Btn(R, "‹  Назад", Back, 64, 26, Ui.CardC);
+                UnityEngine.Object.Destroy(b.GetComponent<LayoutElement>());
+                var rt = (RectTransform)b.transform;
+                rt.anchorMin = rt.anchorMax = new Vector2(0, 1); rt.pivot = new Vector2(0, 1);
+                rt.anchoredPosition = new Vector2(32, -26); rt.sizeDelta = new Vector2(180, 64);
             }
-            var col = Ui.Column(R, 14);
+            var col = Ui.Column(R, 18);
             float m = (1 - width) / 2;
-            Ui.Place(col, m, 0, 1 - m, 1, 0, 24, 0, 120);
+            Ui.Place(col, m, 0, 1 - m, 1, 0, 24, 0, 122);
             return col;
         }
 
-        static void Destroy(UnityEngine.Object o) => UnityEngine.Object.Destroy(o);
+        /// <summary>Строка списка: круглый значок, название, подпись; всё в карточке-кнопке.</summary>
+        protected static Button ListItem(Transform p, string badge, string title, string sub, Action on, bool enabled, Color bg, Color? badgeColor = null)
+        {
+            var r = Ui.Round(p, bg, 26, "Item");
+            var b = r.gameObject.AddComponent<Button>(); b.targetGraphic = r.GetComponent<Image>();
+            var cb = b.colors; cb.highlightedColor = new Color(1.06f, 1.06f, 1.06f); cb.pressedColor = new Color(0.82f, 0.82f, 0.82f); cb.disabledColor = new Color(0.6f, 0.6f, 0.6f, 0.6f); b.colors = cb;
+            b.onClick.AddListener(() => { Sfx.Click(); on?.Invoke(); });
+            r.gameObject.AddComponent<PressScale>();
+            var s = r.gameObject.AddComponent<Shadow>(); s.effectColor = new Color(0, 0, 0, 0.3f); s.effectDistance = new Vector2(0, -4);
+            var h = r.gameObject.AddComponent<HorizontalLayoutGroup>();
+            h.padding = new RectOffset(22, 22, 14, 14); h.spacing = 22; h.childAlignment = TextAnchor.MiddleLeft;
+            h.childControlWidth = h.childControlHeight = true; h.childForceExpandWidth = false; h.childForceExpandHeight = false;
+            r.gameObject.AddComponent<LayoutElement>().minHeight = 92;
+            if (badge != null)
+            {
+                var bd = Ui.Round(r, badgeColor ?? Ui.Gold, 28, "Badge");
+                var bl = bd.gameObject.AddComponent<LayoutElement>(); bl.preferredWidth = bl.minWidth = 56; bl.preferredHeight = bl.minHeight = 56;
+                var t = Ui.Title(bd, badge, 28, new Color(0.08f, 0.12f, 0.09f)); Ui.Fill(t.rectTransform);
+            }
+            var col = Ui.Column(r, 2);
+            col.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1;
+            Ui.Label(col, title, 30, TextAnchor.MiddleLeft, Ui.Txt).fontStyle = FontStyle.Bold;
+            if (!string.IsNullOrEmpty(sub)) Ui.Label(col, sub, 22, TextAnchor.MiddleLeft, Ui.Dim);
+            b.interactable = enabled;
+            return b;
+        }
+
+        protected static Text SectionTitle(Transform p, string s) => Ui.Title(p, s, 30, Ui.Gold, TextAnchor.MiddleLeft);
     }
 
     // ============================== главное меню ==============================
@@ -53,14 +92,48 @@ namespace Boll.App
     {
         public override void Build()
         {
-            var col = Frame("Boll offline", false, 0.45f);
-            col.GetComponent<VerticalLayoutGroup>().padding = new RectOffset(0, 0, 30, 0);
-            if (A.D.Active != null) Ui.Btn(col, "Продолжить", A.Continue, 84, 32, Ui.Gold).GetComponentInChildren<Text>().color = Color.black;
-            Ui.Btn(col, "Играть", () => A.Go(new KindPage(false)), 84, 32);
-            Ui.Btn(col, "Свободный режим", () => A.Go(new KindPage(true)), 84, 30);
-            Ui.Btn(col, "Магазин  (звёзд: " + A.D.Stars + ")", () => A.Go(new ShopPage()), 84, 30);
-            Ui.Btn(col, "Статистика", () => A.Go(new StatsPage()), 84, 30);
-            Ui.Btn(col, "Настройки", () => A.Go(new SettingsPage()), 84, 30);
+            // декоративные шары слева
+            Ball(-150, 130, 440, new Color(0.07f, 0.07f, 0.08f), "8", 0.05f);
+            Ball(90, -170, 300, new Color(0.93f, 0.75f, 0.1f), "1", 0.045f);
+            Ball(260, 270, 200, new Color(0.8f, 0.15f, 0.1f), "3", 0.045f);
+
+            var left = Ui.Column(R, 6); Ui.Place(left, 0.06f, 0.22f, 0.5f, 0.82f);
+            left.GetComponent<VerticalLayoutGroup>().childAlignment = TextAnchor.MiddleLeft;
+            Ui.Title(left, "BOLL", 150, Ui.Gold, TextAnchor.MiddleLeft);
+            Ui.Label(left, "OFFLINE БИЛЬЯРД", 36, TextAnchor.MiddleLeft, Ui.Txt).fontStyle = FontStyle.Bold;
+            Ui.Label(left, "Пять видов, 35 столов, 8 соперников.\nИграйте без интернета.", 26, TextAnchor.UpperLeft, Ui.Dim);
+
+            // звёзды
+            var pill = Ui.Round(R, Ui.CardC, 30, "Stars");
+            pill.anchorMin = pill.anchorMax = new Vector2(0, 0); pill.pivot = new Vector2(0, 0); pill.anchoredPosition = new Vector2(48, 48); pill.sizeDelta = new Vector2(220, 60);
+            var star = Ui.Box(pill, Ui.Gold, "Star"); star.GetComponent<Image>().sprite = UiArt.Star();
+            star.anchorMin = star.anchorMax = new Vector2(0, 0.5f); star.pivot = new Vector2(0, 0.5f); star.anchoredPosition = new Vector2(18, 0); star.sizeDelta = new Vector2(36, 36);
+            var sl = Ui.Title(pill, A.D.Stars + "  " + Plural(A.D.Stars), 26, Ui.Txt); Ui.Place(sl.rectTransform, 0, 0, 1, 1, 60, 0, 10, 0);
+
+            var col = Ui.Column(R, 16); Ui.Place(col, 0.55f, 0.1f, 0.95f, 0.9f);
+            col.GetComponent<VerticalLayoutGroup>().childAlignment = TextAnchor.MiddleCenter;
+            if (A.D.Active != null) Ui.Btn(col, "Продолжить партию", A.Continue, 92, 32, Ui.Gold);
+            Ui.Btn(col, "Играть", () => A.Go(new KindPage(false)), 104, 38, Ui.Accent);
+            var r1 = Ui.Row(col, 16, 84);
+            Ui.Btn(r1, "Свободный режим", () => A.Go(new KindPage(true)), 84, 24, Ui.CardC);
+            Ui.Btn(r1, "Магазин", () => A.Go(new ShopPage()), 84, 26, Ui.CardC);
+            var r2 = Ui.Row(col, 16, 84);
+            Ui.Btn(r2, "Статистика", () => A.Go(new StatsPage()), 84, 26, Ui.CardC);
+            Ui.Btn(r2, "Настройки", () => A.Go(new SettingsPage()), 84, 26, Ui.CardC);
+        }
+
+        static string Plural(int n)
+        {
+            int a = n % 100, b = n % 10;
+            return a >= 11 && a <= 14 ? "звёзд" : b == 1 ? "звезда" : b >= 2 && b <= 4 ? "звезды" : "звёзд";
+        }
+
+        void Ball(float x, float y, float size, Color c, string num, float alpha)
+        {
+            var b = Ui.Box(R, new Color(c.r, c.g, c.b, alpha), "Ball"); b.GetComponent<Image>().sprite = Sprites.Circle; b.GetComponent<Image>().raycastTarget = false;
+            b.anchorMin = b.anchorMax = new Vector2(0, 0.5f); b.pivot = new Vector2(0.5f, 0.5f); b.anchoredPosition = new Vector2(x + size / 2, y); b.sizeDelta = new Vector2(size, size);
+            var d = Ui.Box(b, new Color(1, 1, 1, alpha * 0.45f), "Disc"); d.GetComponent<Image>().sprite = Sprites.Circle; d.GetComponent<Image>().raycastTarget = false;
+            d.anchorMin = d.anchorMax = new Vector2(0.5f, 0.5f); d.sizeDelta = new Vector2(size * 0.45f, size * 0.45f);
         }
 
         public override void Back() => A.Ask("Выйти из игры?", "Выйти", Application.Quit, "Остаться");
@@ -74,14 +147,16 @@ namespace Boll.App
 
         public override void Build()
         {
-            var col = Frame(free ? "Свободный режим: вид игры" : "Выберите игру");
+            var col = Frame(free ? "Свободный режим" : "Выберите игру", true, 0.62f);
+            Ui.Label(col, free ? "Любая карта, любой соперник. Награды и статистики нет." : "Победа приносит звезду. Звёзды тратятся в магазине.", 24, TextAnchor.MiddleCenter, Ui.Dim);
             foreach (GameKind k in AppMain.Kinds)
             {
                 GameKind kk = k;
-                var row = Ui.Row(col, 12, 84);
-                Ui.Btn(row, Names.Kind(k), () => A.Go(free ? (Page)new FreeSetupPage(kk) : new BotPage(kk)), 84, 32);
-                var r = Ui.Btn(row, "Правила", () => A.Go(new RulesPage(kk)), 84, 24, Ui.Dark);
-                r.GetComponent<LayoutElement>().preferredWidth = 200; r.GetComponent<LayoutElement>().flexibleWidth = 0;
+                var row = Ui.Row(col, 14, 92);
+                var main = ListItem(row, Names.Kind(k).Substring(0, 1), Names.Kind(k), Names.KindHint(k), () => A.Go(free ? (Page)new FreeSetupPage(kk) : new BotPage(kk)), true, Ui.CardHi);
+                main.GetComponent<LayoutElement>().flexibleWidth = 1;
+                var r = Ui.Btn(row, "Правила", () => A.Go(new RulesPage(kk)), 92, 24, Ui.CardC);
+                var le = r.GetComponent<LayoutElement>(); le.preferredWidth = 190; le.minWidth = 190; le.flexibleWidth = 0;
             }
         }
     }
@@ -93,9 +168,10 @@ namespace Boll.App
 
         public override void Build()
         {
-            var col = Frame("Правила: " + Names.Kind(kind), true, 0.84f);
+            var col = Frame("Правила: " + Names.Kind(kind), true, 0.82f);
             var list = Ui.Scroll(col);
-            var t = Ui.Label(list, RulesText.For(kind), 26, TextAnchor.UpperLeft);
+            var card = Ui.Card(list, 34);
+            Ui.Label(card, RulesText.For(kind), 26, TextAnchor.UpperLeft);
         }
     }
 
@@ -107,16 +183,17 @@ namespace Boll.App
 
         public override void Build()
         {
-            var col = Frame(Names.Kind(kind) + ": выберите соперника");
-            var list = Ui.Scroll(col);
+            var col = Frame(Names.Kind(kind) + " — соперник", true, 0.66f);
+            var list = Ui.Scroll(col, 14);
             foreach (BotLevel b in A.Cat.Bots)
             {
                 BotLevel bb = b;
                 bool open = A.Prof.IsBotOpen(b.Level);
                 Counter c = A.D.Stats.ByBot[b.Level - 1];
-                string text = b.Level + ". " + b.Name + (open ? "   (партий: " + c.Games + ", побед: " + Profile.WinPercent(c) + ")" : "   — закрыт");
-                var btn = Ui.Btn(list, text, () => A.NewGame(() => A.StartMatch(A.PickMap(kind), bb.Level, false)), 76, 26, open ? Ui.Red : Ui.Dark);
-                btn.interactable = open;
+                string sub = !open ? "Закрыт: победите предыдущего соперника"
+                    : c.Games == 0 ? "Ещё не играли" : "Партий: " + c.Games + ", побед: " + Profile.WinPercent(c);
+                ListItem(list, b.Level.ToString(), b.Name, sub, () => A.NewGame(() => A.StartMatch(A.PickMap(kind), bb.Level, false)),
+                    open, open ? Ui.CardHi : Ui.CardC, open ? Ui.Gold : new Color(0.4f, 0.48f, 0.44f));
             }
             Ui.Label(list, "Победа над сильнейшим из открытых соперников открывает следующего.", 22, TextAnchor.MiddleCenter, Ui.Dim);
         }
@@ -130,76 +207,95 @@ namespace Boll.App
 
         public override void Build()
         {
-            var col = Frame("Свободный режим: " + Names.Kind(kind), true, 0.84f);
-            var cols = Ui.Row(col, 24, 520);
-            var le = cols.GetComponent<LayoutElement>(); le.flexibleHeight = 1;
-            var left = Ui.Column(cols, 10); var right = Ui.Column(cols, 10);
-            Ui.Label(left, "Карта", 28, TextAnchor.MiddleCenter, Ui.Gold);
+            var col = Frame(Names.Kind(kind) + " — свободный режим", true, 0.86f);
+            var cols = Ui.Row(col, 22, 400);
+            cols.GetComponent<LayoutElement>().flexibleHeight = 1;
             var maps = A.Maps.Maps(kind);
-            var lm = Ui.Scroll(left, 8);
-            for (int i = 0; i < maps.Count; i++)
+            Side(cols, "Карта", maps.Select(m => m.Name).ToArray(), mapIdx, i => { mapIdx = i; A.Show(this); });
+            Side(cols, "Соперник", A.Cat.Bots.Select(b => b.Name).ToArray(), level - 1, i => { level = i + 1; A.Show(this); });
+            Ui.Btn(col, "Играть", () => A.NewGame(() => A.StartMatch(maps[mapIdx], level, true)), 92, 34, Ui.Gold);
+        }
+
+        static void Side(Transform p, string title, string[] items, int sel, Action<int> pick)
+        {
+            var card = Ui.Card(p, 20, 10);
+            var le = card.gameObject.AddComponent<LayoutElement>(); le.flexibleHeight = 1; le.flexibleWidth = 1;
+            Ui.Title(card, title, 30, Ui.Gold);
+            var list = Ui.Scroll(card, 8);
+            for (int i = 0; i < items.Length; i++)
             {
                 int ii = i;
-                Ui.Btn(lm, (i + 1) + ". " + maps[i].Name, () => { mapIdx = ii; A.Show(this); }, 64, 26, i == mapIdx ? Ui.Red : Ui.Dark);
+                Ui.Btn(list, (i + 1) + ".  " + items[i], () => pick(ii), 62, 24, i == sel ? Ui.Accent : Ui.Dark);
             }
-            Ui.Label(right, "Соперник", 28, TextAnchor.MiddleCenter, Ui.Gold);
-            var lb = Ui.Scroll(right, 8);
-            foreach (BotLevel b in A.Cat.Bots)
-            {
-                int l = b.Level;
-                Ui.Btn(lb, l + ". " + b.Name, () => { level = l; A.Show(this); }, 64, 26, l == level ? Ui.Red : Ui.Dark);
-            }
-            Ui.Btn(col, "Играть", () => A.NewGame(() => A.StartMatch(maps[mapIdx], level, true)), 84, 32, Ui.Gold).GetComponentInChildren<Text>().color = Color.black;
         }
     }
 
     // ============================== настройки ==============================
     public sealed class SettingsPage : MenuPage
     {
+        bool dirty;
+
         public override void Build()
         {
-            var col = Frame("Настройки", true, 0.8f);
-            var list = Ui.Scroll(col, 14);
+            var col = Frame("Настройки", true, 0.72f);
+            var list = Ui.Scroll(col, 18);
             Settings s = A.D.Settings;
-            Toggle(list, "Линия удара", s.AimLine, v => { s.AimLine = v; if (!v) s.BounceLine = false; A.SaveNow(); A.Show(this); });
-            var bounce = Toggle(list, s.AimLine ? "Линия отскока" : "Линия отскока (нужна линия удара)", s.BounceLine, v => { s.BounceLine = v; A.SaveNow(); A.Show(this); });
-            bounce.interactable = s.AimLine;
 
-            Ui.Label(list, "Модель физики", 28, TextAnchor.MiddleCenter, Ui.Gold);
-            foreach (PhysicsModel m in A.Cat.Models)
+            // --- прицел ---
+            var aim = Ui.Card(list);
+            SectionTitle(aim, "Прицел");
+            var rowAim = SettingRow(aim, "Линия удара", "Показывает, куда полетит биток");
+            var swAim = new UiSwitch(rowAim, s.AimLine, null);
+            var rowBounce = SettingRow(aim, "Линия отскока", "Требует включённой линии удара");
+            var swBounce = new UiSwitch(rowBounce, s.BounceLine, v => { s.BounceLine = v; A.SaveNow(); });
+            swBounce.SetEnabled(s.AimLine);
+            swAim.Btn.onClick.AddListener(() =>
             {
-                PhysicsModel mm = m;
-                Ui.Btn(list, m.Name, () =>
-                {
-                    if (mm.Id == s.Physics) return;
-                    A.Ask("Новая модель физики будет использована со следующей партии. Незаконченная партия доигрывается на прежней модели.", "Сменить",
-                        () => { s.Physics = mm.Id; A.SaveNow(); A.Show(this); }, "Отмена");
-                }, 64, 26, m.Id == s.Physics ? Ui.Red : Ui.Dark);
-            }
+                s.AimLine = swAim.On;
+                if (!swAim.On) { s.BounceLine = false; swBounce.Set(false); }
+                swBounce.SetEnabled(swAim.On);
+                A.SaveNow();
+            });
 
-            Ui.Label(list, "Громкость", 28, TextAnchor.MiddleCenter, Ui.Gold);
-            Slide(list, "Общая", s.Master, v => { s.Master = v; A.ApplyAudio(); });
-            Slide(list, "Музыка", s.Music, v => { s.Music = v; A.ApplyAudio(); });
-            Slide(list, "Эффекты", s.Effects, v => { s.Effects = v; A.ApplyAudio(); });
-            Ui.Btn(list, "Поделиться журналом ошибок", A.ShareLog, 68, 24, Ui.Dark);
+            // --- физика ---
+            var ph = Ui.Card(list);
+            SectionTitle(ph, "Модель физики");
+            var models = A.Cat.Models;
+            int cur = Mathf.Max(0, Array.FindIndex(models, m => m.Id == s.Physics));
+            UiSegment seg = null;
+            seg = new UiSegment(ph, models.Select(m => m.Name).ToArray(), cur, i =>
+            {
+                if (models[i].Id == s.Physics) return;
+                A.Ask("Новая модель физики будет использована со следующей партии. Незаконченная партия доигрывается на прежней модели.", "Сменить",
+                    () => { s.Physics = models[i].Id; A.SaveNow(); seg.Select(i); }, "Отмена");
+            });
+            Ui.Label(ph, "Действует со следующей партии.", 22, TextAnchor.MiddleLeft, Ui.Dim);
+
+            // --- звук ---
+            var snd = Ui.Card(list, 26, 6);
+            SectionTitle(snd, "Звук");
+            Ui.SliderRow(snd, "Общая", s.Master, v => { s.Master = v; A.ApplyAudio(); dirty = true; });
+            Ui.SliderRow(snd, "Музыка", s.Music, v => { s.Music = v; A.ApplyAudio(); dirty = true; });
+            Ui.SliderRow(snd, "Эффекты", s.Effects, v => { s.Effects = v; A.ApplyAudio(); dirty = true; });
+
+            Ui.Btn(list, "Поделиться журналом ошибок", A.ShareLog, 72, 26, Ui.CardC);
         }
 
-        Button Toggle(Transform p, string label, bool on, Action<bool> set) =>
-            Ui.Btn(p, label + ":  " + (on ? "вкл" : "выкл"), () => set(!on), 68, 26, on ? Ui.Red : Ui.Dark);
-
-        void Slide(Transform p, string label, int value, Action<int> set)
+        static RectTransform SettingRow(Transform p, string title, string sub)
         {
-            var row = Ui.Row(p, 16, 56);
-            var t = Ui.Label(row, label + ": " + value, 26, TextAnchor.MiddleLeft);
-            t.gameObject.AddComponent<LayoutElement>().preferredWidth = 260;
-            Ui.MakeSlider(row, value, v => { t.text = label + ": " + v; set(v); });
-            row.GetComponent<LayoutElement>().preferredHeight = 56;
-            // сохраняем при уходе со страницы
-            pendingSave = true;
+            var r = Ui.Rect(p, "Row");
+            var h = r.gameObject.AddComponent<HorizontalLayoutGroup>();
+            h.spacing = 20; h.childAlignment = TextAnchor.MiddleLeft;
+            h.childControlWidth = h.childControlHeight = true; h.childForceExpandWidth = false; h.childForceExpandHeight = false;
+            r.gameObject.AddComponent<LayoutElement>().minHeight = 76;
+            var col = Ui.Column(r, 2);
+            col.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1;
+            Ui.Label(col, title, 28, TextAnchor.MiddleLeft);
+            Ui.Label(col, sub, 21, TextAnchor.MiddleLeft, Ui.Dim);
+            return r;
         }
 
-        bool pendingSave;
-        public override void Closed() { if (pendingSave) A.SaveNow(); }
+        public override void Closed() { if (dirty) A.SaveNow(); dirty = false; }
     }
 
     // ============================== статистика ==============================
@@ -207,24 +303,44 @@ namespace Boll.App
     {
         public override void Build()
         {
-            var col = Frame("Статистика", true, 0.8f);
-            var list = Ui.Scroll(col, 10);
-            Row(list, "Всего", A.D.Stats.Total, true);
-            Ui.Label(list, "По соперникам", 28, TextAnchor.MiddleCenter, Ui.Gold);
-            foreach (BotLevel b in A.Cat.Bots) Row(list, b.Level + ". " + b.Name, A.D.Stats.ByBot[b.Level - 1], false);
-            Ui.Label(list, "По видам игры", 28, TextAnchor.MiddleCenter, Ui.Gold);
-            foreach (GameKind k in AppMain.Kinds) Row(list, Names.Kind(k), A.Prof.KindStats(k), false);
+            var col = Frame("Статистика", true, 0.72f);
+            var list = Ui.Scroll(col, 16);
+
+            var total = Ui.Card(list, 28, 10, true);
+            var big = Ui.Row(total, 12, 110);
+            Big(big, A.D.Stats.Total.Games.ToString(), "партий");
+            Big(big, A.D.Stats.Total.Wins.ToString(), "побед");
+            Big(big, Profile.WinPercent(A.D.Stats.Total), "побед в процентах");
+
+            var bots = Ui.Card(list, 22, 8);
+            SectionTitle(bots, "По соперникам");
+            foreach (BotLevel b in A.Cat.Bots) Row(bots, b.Level + ".  " + b.Name, A.D.Stats.ByBot[b.Level - 1]);
+
+            var kinds = Ui.Card(list, 22, 8);
+            SectionTitle(kinds, "По видам игры");
+            foreach (GameKind k in AppMain.Kinds) Row(kinds, Names.Kind(k), A.Prof.KindStats(k));
         }
 
-        static void Row(Transform p, string name, Counter c, bool big)
+        static void Big(Transform p, string value, string label)
         {
-            var r = Ui.Box(p, Ui.Dark, "Row");
+            var c = Ui.Column(p, 0);
+            c.GetComponent<VerticalLayoutGroup>().childAlignment = TextAnchor.MiddleCenter;
+            Ui.Title(c, value, 56, Ui.Gold);
+            Ui.Label(c, label, 22, TextAnchor.MiddleCenter, Ui.Dim);
+        }
+
+        static void Row(Transform p, string name, Counter c)
+        {
+            var r = Ui.Rect(p, "Row");
             var h = r.gameObject.AddComponent<HorizontalLayoutGroup>();
-            h.padding = new RectOffset(20, 20, 8, 8); h.childControlWidth = h.childControlHeight = true; h.childForceExpandWidth = true;
-            Ui.Label(r, name, big ? 30 : 26, TextAnchor.MiddleLeft);
-            var t = Ui.Label(r, "партий " + c.Games + "   побед " + c.Wins + "   " + Profile.WinPercent(c), big ? 30 : 26, TextAnchor.MiddleRight);
-            t.gameObject.AddComponent<LayoutElement>().preferredWidth = 520;
-            r.gameObject.AddComponent<LayoutElement>().minHeight = 56;
+            h.spacing = 12; h.padding = new RectOffset(6, 6, 6, 6); h.childAlignment = TextAnchor.MiddleLeft;
+            h.childControlWidth = h.childControlHeight = true; h.childForceExpandWidth = false; h.childForceExpandHeight = false;
+            r.gameObject.AddComponent<LayoutElement>().minHeight = 50;
+            Ui.Label(r, name, 26, TextAnchor.MiddleLeft).gameObject.AddComponent<LayoutElement>().flexibleWidth = 1;
+            var t = Ui.Label(r, c.Games + " / " + c.Wins, 24, TextAnchor.MiddleRight, Ui.Dim);
+            var tl = t.gameObject.AddComponent<LayoutElement>(); tl.preferredWidth = 130;
+            var pct = Ui.Title(r, Profile.WinPercent(c), 26, c.Games == 0 ? Ui.Dim : Ui.Gold, TextAnchor.MiddleRight);
+            var pl = pct.gameObject.AddComponent<LayoutElement>(); pl.preferredWidth = 100;
         }
     }
 
@@ -233,29 +349,48 @@ namespace Boll.App
     {
         public override void Build()
         {
-            var col = Frame("Магазин", true, 0.8f);
-            Ui.Label(col, "Звёзд: " + A.D.Stars, 32, TextAnchor.MiddleCenter, Ui.Gold);
-            var list = Ui.Scroll(col, 10);
-            Ui.Label(list, "Сукно", 28, TextAnchor.MiddleCenter, Ui.Gold);
-            foreach (Skin s in A.Cat.Cloths) Item(list, s, true);
-            Ui.Label(list, "Кии", 28, TextAnchor.MiddleCenter, Ui.Gold);
-            foreach (Skin s in A.Cat.Cues) Item(list, s, false);
+            var col = Frame("Магазин", true, 0.74f);
+            var list = Ui.Scroll(col, 16);
+
+            var bal = Ui.Card(list, 22, 4, true);
+            var row = Ui.Rect(bal, "Bal"); var h = row.gameObject.AddComponent<HorizontalLayoutGroup>();
+            h.spacing = 14; h.childAlignment = TextAnchor.MiddleCenter; h.childControlWidth = h.childControlHeight = true; h.childForceExpandWidth = h.childForceExpandHeight = false;
+            row.gameObject.AddComponent<LayoutElement>().minHeight = 56;
+            var star = Ui.Box(row, Ui.Gold, "Star"); star.GetComponent<Image>().sprite = UiArt.Star();
+            var sle = star.gameObject.AddComponent<LayoutElement>(); sle.preferredWidth = sle.preferredHeight = 44;
+            Ui.Title(row, "У вас " + A.D.Stars, 36, Ui.Gold);
+
+            var c1 = Ui.Card(list, 22, 12); SectionTitle(c1, "Сукно");
+            foreach (Skin s in A.Cat.Cloths) Item(c1, s, true);
+            var c2 = Ui.Card(list, 22, 12); SectionTitle(c2, "Кии");
+            foreach (Skin s in A.Cat.Cues) Item(c2, s, false);
         }
 
         void Item(Transform p, Skin s, bool cloth)
         {
-            var r = Ui.Box(p, Ui.Dark, "Item");
+            var r = Ui.Round(p, Ui.Dark, 22, "Item");
             var h = r.gameObject.AddComponent<HorizontalLayoutGroup>();
-            h.padding = new RectOffset(16, 16, 10, 10); h.spacing = 16; h.childControlWidth = h.childControlHeight = true; h.childForceExpandWidth = false; h.childForceExpandHeight = true;
+            h.padding = new RectOffset(16, 16, 12, 12); h.spacing = 18; h.childAlignment = TextAnchor.MiddleLeft;
+            h.childControlWidth = h.childControlHeight = true; h.childForceExpandWidth = false; h.childForceExpandHeight = false;
             r.gameObject.AddComponent<LayoutElement>().minHeight = 96;
-            var sw = Ui.Box(r, Ui.Hex(s.Color, Color.gray), "Swatch");
-            var le = sw.gameObject.AddComponent<LayoutElement>(); le.preferredWidth = cloth ? 120 : 220; le.preferredHeight = cloth ? 76 : 30;
-            if (!cloth) { le.preferredHeight = 30; }
-            var name = Ui.Label(r, s.Name, 28, TextAnchor.MiddleLeft); name.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1;
-            string st = A.Prof.IsSelected(s.Id) ? "Выбрано" : A.Prof.IsOwned(s.Id) ? "Куплено" : s.Price + " звёзд";
-            var b = Ui.Btn(r, st, () => Tap(s), 76, 24, A.Prof.IsSelected(s.Id) ? Ui.Gold : A.Prof.IsOwned(s.Id) ? Ui.Red : Ui.Dark);
-            if (A.Prof.IsSelected(s.Id)) b.GetComponentInChildren<Text>().color = Color.black;
-            var bl = b.GetComponent<LayoutElement>(); bl.preferredWidth = 220; bl.minWidth = 220;
+            Color c = Ui.Hex(s.Color, Color.gray);
+            var sw = Ui.Rect(r, "Swatch"); var sl = sw.gameObject.AddComponent<LayoutElement>(); sl.preferredWidth = sl.minWidth = 190; sl.preferredHeight = sl.minHeight = 72;
+            if (cloth)
+            {
+                var felt = Ui.Round(sw, c, 14, "Felt"); Ui.Fill(felt);
+                var ball = Ui.Box(felt, Color.white, "B"); ball.GetComponent<Image>().sprite = Sprites.Circle;
+                ball.anchorMin = ball.anchorMax = new Vector2(0.5f, 0.5f); ball.sizeDelta = new Vector2(22, 22);
+            }
+            else
+            {
+                var tip = Ui.Round(sw, c, 6, "Tip"); tip.anchorMin = tip.anchorMax = new Vector2(0, 0.5f); tip.pivot = new Vector2(0, 0.5f); tip.sizeDelta = new Vector2(120, 12);
+                var butt = Ui.Round(sw, c * 0.6f + new Color(0, 0, 0, 0.4f), 8, "Butt"); butt.anchorMin = butt.anchorMax = new Vector2(1, 0.5f); butt.pivot = new Vector2(1, 0.5f); butt.sizeDelta = new Vector2(76, 18);
+            }
+            var name = Ui.Title(r, s.Name, 28, Ui.Txt, TextAnchor.MiddleLeft); name.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1;
+            bool sel = A.Prof.IsSelected(s.Id), own = A.Prof.IsOwned(s.Id);
+            string st = sel ? "Выбрано" : own ? "Выбрать" : s.Price + " звёзд";
+            var b = Ui.Btn(r, st, () => Tap(s), 70, 24, sel ? Ui.Gold : own ? Ui.Accent : Ui.CardC);
+            var bl = b.GetComponent<LayoutElement>(); bl.preferredWidth = bl.minWidth = 190;
         }
 
         void Tap(Skin s)
@@ -278,16 +413,17 @@ namespace Boll.App
 
         public override void Build()
         {
-            var col = Ui.Column(R, 22, 0);
-            Ui.Place(col, 0.28f, 0.1f, 0.72f, 0.9f);
-            col.GetComponent<VerticalLayoutGroup>().childAlignment = TextAnchor.MiddleCenter;
-            Ui.Label(col, won ? "Победа!" : "Поражение", 64, TextAnchor.MiddleCenter, won ? Ui.Gold : Ui.Txt);
-            Ui.Label(col, Names.Kind(m.Kind) + ", карта «" + m.Map.Name + "»", 28, TextAnchor.MiddleCenter, Ui.Dim);
-            Ui.Label(col, "Счёт: вы " + m.St.Score[0] + " : " + m.St.Score[1] + " соперник", 36);
-            if (!free && won) Ui.Label(col, "+1 звезда (всего " + A.D.Stars + ")", 28, TextAnchor.MiddleCenter, Ui.Gold);
-            if (free) Ui.Label(col, "Свободный режим: награды и статистики нет.", 24, TextAnchor.MiddleCenter, Ui.Dim);
-            Ui.Btn(col, free ? "Сыграть ещё" : won ? "Следующая игра" : "Переиграть", Next, 84, 32, Ui.Red);
-            Ui.Btn(col, "Главное меню", A.Home, 84, 30, Ui.Dark);
+            var card = Ui.Card(R, 40, 18, true);
+            Ui.Place(card, 0.5f, 0.5f, 0.5f, 0.5f); card.sizeDelta = new Vector2(760, 0);
+            card.pivot = new Vector2(0.5f, 0.5f);
+            card.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            Ui.Title(card, won ? "Победа!" : "Поражение", 76, won ? Ui.Gold : Ui.Txt);
+            Ui.Label(card, Names.Kind(m.Kind) + ", карта «" + m.Map.Name + "»", 26, TextAnchor.MiddleCenter, Ui.Dim);
+            Ui.Title(card, "Вы " + m.St.Score[0] + " : " + m.St.Score[1] + " Соперник", 44, Ui.Txt);
+            if (!free && won) Ui.Label(card, "+1 звезда (всего " + A.D.Stars + ")", 28, TextAnchor.MiddleCenter, Ui.Gold);
+            if (free) Ui.Label(card, "Свободный режим: наград и статистики нет.", 24, TextAnchor.MiddleCenter, Ui.Dim);
+            Ui.Btn(card, free ? "Сыграть ещё" : won ? "Следующая игра" : "Переиграть", Next, 90, 32, Ui.Accent);
+            Ui.Btn(card, "Главное меню", A.Home, 76, 28, Ui.Dark);
         }
 
         void Next()

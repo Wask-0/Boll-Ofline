@@ -178,7 +178,8 @@ namespace Boll.App
         {
             current?.Closed();
             for (int i = pageRoot.childCount - 1; i >= 0; i--) Destroy(pageRoot.GetChild(i).gameObject);
-            var root = Ui.Box(pageRoot, Ui.Bg, "Screen"); Ui.Fill(root);
+            var root = Ui.Box(pageRoot, Color.white, "Screen"); Ui.Fill(root);
+            root.GetComponent<Image>().sprite = UiArt.Gradient();
             current = p; p.Init(this, root);
             p.Build();
         }
@@ -212,21 +213,18 @@ namespace Boll.App
 
         public void Modal(string text, Action cancel, params (string label, Action act)[] buttons)
         {
-            var dim = Ui.Box(dialogLayer, new Color(0, 0, 0, 0.72f), "Dialog"); Ui.Fill(dim);
-            var panel = Ui.Box(dim, Ui.PanelC, "Panel");
+            var dim = Ui.Box(dialogLayer, new Color(0, 0.03f, 0.02f, 0.78f), "Dialog"); Ui.Fill(dim);
+            var panel = Ui.Card(dim, 40, 30, true);
             panel.anchorMin = panel.anchorMax = panel.pivot = new Vector2(0.5f, 0.5f);
             panel.sizeDelta = new Vector2(820, 0);
-            var v = panel.gameObject.AddComponent<VerticalLayoutGroup>();
-            v.padding = new RectOffset(40, 40, 36, 36); v.spacing = 28;
-            v.childControlWidth = v.childControlHeight = true; v.childForceExpandWidth = true; v.childForceExpandHeight = false;
             panel.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            Ui.Label(panel, text, 28);
-            var row = Ui.Row(panel, 20, 76);
+            Ui.Label(panel, text, 30);
+            var row = Ui.Row(panel, 20, 80);
             GameObject go = dim.gameObject;
-            foreach (var (label, act) in buttons)
+            for (int i = 0; i < buttons.Length; i++)
             {
-                Action a = act;
-                Ui.Btn(row, label, () => { CloseDialog(go); a?.Invoke(); }, 76, 26, label == buttons[0].label ? Ui.Red : Ui.Dark);
+                Action a = buttons[i].act;
+                Ui.Btn(row, buttons[i].label, () => { CloseDialog(go); a?.Invoke(); }, 80, 28, i == 0 ? Ui.Accent : Ui.Dark);
             }
             dialogs.Add((go, cancel));
         }
