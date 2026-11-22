@@ -76,7 +76,7 @@ namespace Boll.App
         void Fit()
         {
             sf = R.GetComponentInParent<Canvas>().scaleFactor;
-            float x0 = 20 * sf, y0 = 20 * sf, x1 = Screen.width - 280 * sf, y1 = Screen.height - 100 * sf;
+            float x0 = 20 * sf, y0 = 95 * sf, x1 = Screen.width - 280 * sf, y1 = Screen.height - 100 * sf;
             tv.SetRegion(new Rect(x0, y0, Mathf.Max(100, x1 - x0), Mathf.Max(100, y1 - y0)));
         }
 
@@ -112,7 +112,7 @@ namespace Boll.App
             powerHandle.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(0, -3);
             var dot = Ui.Rect(powerHandle, "Dot"); var dimg = dot.gameObject.AddComponent<Image>(); dimg.sprite = Sprites.Circle; dimg.color = Ui.Gold; dimg.raycastTarget = false;
             dot.anchorMin = dot.anchorMax = new Vector2(0.5f, 0.5f); dot.sizeDelta = new Vector2(14, 14);
-            powerText = Ui.Title(R, "Сила 0 %", 24);
+            powerText = Ui.Title(R, "Сила 0 %", 19);
             Anchor(powerText.rectTransform, new Vector2(1, 1), new Vector2(0.5f, 1), new Vector2(-70, -96), new Vector2(200, 32));
             var pc = bar.gameObject.AddComponent<Catcher>();
             pc.Down = pc.Drag = p =>
@@ -423,9 +423,35 @@ namespace Boll.App
             }
         }
 
+        /// <summary>Шары, по которым игрок должен бить (для подсветки); null — подсвечивать нечего.</summary>
+        System.Collections.Generic.HashSet<int> TargetIds()
+        {
+            var on = M.Solver.Balls.Where(b => !b.Pocketed && b.Id != cueId).Select(b => b.Id).ToList();
+            MatchState st = M.St;
+            switch (M.Kind)
+            {
+                case GameKind.Eight:
+                    if (st.BreakPending) return null;
+                    if (st.TableOpen) return new System.Collections.Generic.HashSet<int>(on.Where(i => i != 8));
+                    int g = st.Group[0];
+                    var own = on.Where(i => g == 1 ? i >= 1 && i <= 7 : i >= 9 && i <= 15).ToList();
+                    return new System.Collections.Generic.HashSet<int>(own.Count > 0 ? own : on.Where(i => i == 8).ToList());
+                case GameKind.Nine:
+                    return on.Count == 0 ? null : new System.Collections.Generic.HashSet<int> { on.Min() };
+                case GameKind.Siberian:
+                    return new System.Collections.Generic.HashSet<int>(on);
+                case GameKind.Snooker:
+                    var ob = M.Rules.OnBalls().Where(on.Contains).ToList();
+                    if (st.ColourOn && nominated >= 16 && ob.Contains(nominated)) ob = new System.Collections.Generic.List<int> { nominated };
+                    return new System.Collections.Generic.HashSet<int>(ob);
+                default: return null;      // «Американка»: бить можно по любому шару
+            }
+        }
+
         void DrawAim(float dt)
         {
             bool mine = PlayerTurn && M.Phase == Phase.Aiming && !shooting && !paused;
+            tv.ShowTargets(mine ? TargetIds() : null);
             tv.ShowHome(mine && !placed && M.St.Hand == HandMode.Home);
             tv.ShowCalled(called);
             Ball cue = M.BallById(cueId);

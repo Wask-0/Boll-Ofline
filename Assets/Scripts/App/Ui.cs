@@ -203,11 +203,14 @@ namespace Boll.App
             return r;
         }
 
+        /// <summary>Общий множитель размера шрифтов (крупный текст для удобства чтения).</summary>
+        public const float FontScale = 1.25f;
+
         public static Text Label(Transform p, string s, int size = 24, TextAnchor a = TextAnchor.MiddleCenter, Color? c = null)
         {
             var r = Rect(p, "Text");
             var t = r.gameObject.AddComponent<Text>();
-            t.font = Font; t.text = s; t.fontSize = size; t.alignment = a; t.color = c ?? Txt;
+            t.font = Font; t.text = s; t.fontSize = Mathf.RoundToInt(size * FontScale); t.alignment = a; t.color = c ?? Txt;
             t.horizontalOverflow = HorizontalWrapMode.Wrap; t.verticalOverflow = VerticalWrapMode.Overflow;
             t.raycastTarget = false;
             return t;

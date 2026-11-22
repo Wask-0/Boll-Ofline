@@ -240,6 +240,30 @@ namespace Boll.App
 
         public void ShowHome(bool on) { foreach (Transform t in homeSegs) t.gameObject.SetActive(on); }
 
+        readonly Dictionary<int, (Transform ring, Transform glow)> halos = new Dictionary<int, (Transform, Transform)>();
+
+        /// <summary>Подсветка шаров, по которым нужно бить (для слабовидящих): яркое кольцо и мягкое свечение; null — выключить.</summary>
+        public void ShowTargets(ICollection<int> ids)
+        {
+            float pulse = 1f + 0.08f * Mathf.Sin(Time.unscaledTime * 5f);
+            foreach (Ball b in m.Solver.Balls)
+            {
+                bool on = ids != null && ids.Contains(b.Id) && !b.Pocketed;
+                if (!halos.TryGetValue(b.Id, out var h))
+                {
+                    if (!on) continue;
+                    var glow = NewSprite("glow" + b.Id, Sprites.Circle, new Color(1f, 0.92f, 0.2f, 0.5f), 4);
+                    var ring = NewSprite("halo" + b.Id, Sprites.Ring, new Color(1f, 0.95f, 0.25f), 6);
+                    halos[b.Id] = h = (ring, glow);
+                }
+                h.ring.gameObject.SetActive(on); h.glow.gameObject.SetActive(on);
+                if (!on) continue;
+                h.ring.position = h.glow.position = V(b.Pos);
+                h.ring.localScale = Vector3.one * (float)(R * 3.3) * pulse;
+                h.glow.localScale = Vector3.one * (float)(R * 4.2);
+            }
+        }
+
         public void ShowSelection(Vec2? p) { selRing.gameObject.SetActive(p.HasValue); if (p.HasValue) selRing.position = V(p.Value); }
 
         public void ShowCalled(int pocket)

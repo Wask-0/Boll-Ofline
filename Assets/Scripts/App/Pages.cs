@@ -422,6 +422,12 @@ namespace Boll.App
 
         public override void Build()
         {
+            // после победы карта меняется (и в «Следующая игра», и при новом заходе из меню); после поражения — та же
+            if (nextMap == null)
+            {
+                nextMap = free ? m.Map : Match.NextMap(A.Maps, m.Map, won, new Rng((ulong)DateTime.UtcNow.Ticks));
+                if (!free) { A.D.LastMap[KindDefaults.Key(m.Kind)] = nextMap.Id; A.SaveNow(); }
+            }
             var card = Ui.Card(R, 40, 18, true);
             Ui.Place(card, 0.5f, 0.5f, 0.5f, 0.5f); card.sizeDelta = new Vector2(760, 0);
             card.pivot = new Vector2(0.5f, 0.5f);
@@ -435,11 +441,9 @@ namespace Boll.App
             Ui.Btn(card, "Главное меню", A.Home, 76, 28, Ui.Dark);
         }
 
-        void Next()
-        {
-            MapData map = free ? m.Map : Match.NextMap(A.Maps, m.Map, won, new Rng((ulong)DateTime.UtcNow.Ticks));
-            A.StartMatch(map, level, free);
-        }
+        MapData nextMap;
+
+        void Next() => A.StartMatch(nextMap ?? m.Map, level, free);
 
         public override void Back() { }   // «Назад» на экране итога ничего не делает
     }
